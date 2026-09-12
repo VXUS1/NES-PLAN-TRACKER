@@ -6,7 +6,7 @@
   <title>خطة هندسة وأمن شبكات الحاسوب | NES Plan Tracker</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Almarai:wght@700;800&family=Outfit:wght@600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600;700&display=swap" rel="stylesheet">
   
   <style>
     body.dark-mode {
@@ -36,6 +36,10 @@
       --c-next-year-text: #ffffff;
       --c-term-2028-bg: #164e63;
       --c-term-2028-text: #ffffff;
+
+      --grid-dot-color: rgba(56, 189, 248, 0.07);
+      --accent: #38bdf8;
+      --accent-soft: rgba(56, 189, 248, 0.14);
     }
 
     body.light-mode {
@@ -65,34 +69,45 @@
       --c-next-year-text: #5b21b6;
       --c-term-2028-bg: #cffafe;
       --c-term-2028-text: #155e75;
+
+      --grid-dot-color: rgba(14, 116, 144, 0.09);
+      --accent: #0891b2;
+      --accent-soft: rgba(8, 145, 178, 0.12);
     }
 
     * { box-sizing: border-box; user-select: none; -webkit-touch-callout: none; }
     
     body[dir="rtl"], body[dir="rtl"] * {
-      font-family: 'Farah', 'Almarai', 'Segoe UI', Tahoma, sans-serif;
+      font-family: 'IBM Plex Sans Arabic', 'Segoe UI', Tahoma, sans-serif;
     }
     body[dir="ltr"], body[dir="ltr"] * {
-      font-family: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-family: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    }
+    #pctText, #completedHours, #totalHours, #completedCourses, #totalCourses,
+    #count-completed, #count-current, #count-next, #count-summer, #count-next-year, #count-term-2028,
+    .node-credits {
+      font-family: 'IBM Plex Mono', 'Consolas', monospace !important;
+      letter-spacing: 0.01em;
     }
 
     body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background-color: var(--bg-color); color: var(--text-main); transition: background-color 0.3s; touch-action: none; }
 
     #dashboard {
       position: absolute;
-      top: 10px;
-      left: 10px;
-      right: 10px;
+      top: 12px;
+      left: 12px;
+      right: 12px;
       z-index: 100;
       background: var(--panel-bg);
-      backdrop-filter: blur(12px);
-      border-radius: 16px;
-      padding: 12px 18px;
-      box-shadow: 0 8px 30px rgba(0,0,0,0.25);
+      backdrop-filter: blur(14px);
+      border-radius: 18px;
+      padding: 14px 20px 16px;
+      box-shadow: 0 10px 34px rgba(0,0,0,0.28);
       border: 1px solid var(--border-color);
+      border-top: 1px solid var(--accent-soft);
       display: flex;
       flex-direction: column;
-      gap: 8px;
+      gap: 10px;
     }
 
     .dash-header {
@@ -102,7 +117,29 @@
       flex-wrap: wrap;
       gap: 8px;
     }
-    .dash-header h2 { margin: 0; font-size: 1.15rem; color: #38bdf8; }
+    .dash-header h2 {
+      margin: 0;
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: var(--accent);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .dash-header h2::before {
+      content: "";
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: var(--accent);
+      box-shadow: 0 0 8px var(--accent);
+      flex-shrink: 0;
+      animation: pulse-dot 2.4s ease-in-out infinite;
+    }
+    @keyframes pulse-dot {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.55; transform: scale(0.8); }
+    }
 
     .header-controls {
       display: flex;
@@ -113,33 +150,37 @@
       background: var(--btn-bg);
       color: var(--text-main);
       border: 1px solid var(--border-color);
-      padding: 5px 12px;
+      padding: 6px 13px;
       border-radius: 20px;
-      font-size: 0.8rem;
+      font-size: 0.78rem;
       cursor: pointer;
-      font-weight: 700;
+      font-weight: 600;
       transition: all 0.2s;
     }
-    .toggle-btn:hover { border-color: #38bdf8; color: #38bdf8; }
+    .toggle-btn:hover { border-color: var(--accent); color: var(--accent); }
 
     .stats-row {
       display: flex;
-      gap: 12px;
+      gap: 8px;
       flex-wrap: wrap;
-      font-size: 0.78rem;
+      font-size: 0.76rem;
       align-items: center;
     }
     .stat-badge {
       display: flex;
       align-items: center;
-      gap: 5px;
-      font-weight: 700;
+      gap: 6px;
+      font-weight: 600;
+      background: var(--btn-bg);
+      border: 1px solid var(--border-color);
+      padding: 4px 10px;
+      border-radius: 999px;
     }
-    .badge-dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
+    .badge-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; flex-shrink: 0; }
 
     .progress-bar-bg {
       width: 100%;
-      height: 7px;
+      height: 8px;
       background: var(--border-color);
       border-radius: 6px;
       overflow: hidden;
@@ -149,7 +190,7 @@
       width: 0%;
       background: linear-gradient(90deg, #10b981, #06b6d4);
       box-shadow: 0 0 10px #10b981;
-      transition: width 0.3s ease;
+      transition: width 0.4s ease;
     }
 
     #viewport {
@@ -157,7 +198,10 @@
       height: 100vh;
       cursor: grab;
       overflow: hidden;
-      background: var(--viewport-bg);
+      background-color: var(--bg-color);
+      background-image: var(--viewport-bg), radial-gradient(var(--grid-dot-color) 1.4px, transparent 1.4px);
+      background-size: 100% 100%, 26px 26px;
+      background-position: 0 0, 0 0;
     }
     #viewport:active { cursor: grabbing; }
 
@@ -166,18 +210,24 @@
     .link-solid { stroke: var(--link-color); stroke-width: 2.4; fill: none; transition: stroke 0.2s; }
     .link-dashed { stroke: var(--link-color); stroke-width: 2.4; stroke-dasharray: 6,6; fill: none; transition: stroke 0.2s; }
 
-    .node-group { cursor: pointer; }
-    
+    .node-group { cursor: pointer; transition: transform 0.15s ease; transform-box: fill-box; transform-origin: center; }
+
+    @media (hover: hover) and (pointer: fine) {
+      .node-group:hover { transform: scale(1.045); }
+      .node-group:hover .node-circle { stroke-width: 4.5px; }
+      .node-group:hover .node-mask { filter: brightness(1.1); }
+    }
+
     .node-mask {
       fill: var(--node-solid-fill);
       stroke: none;
-      transition: fill 0.25s ease;
+      transition: fill 0.25s ease, filter 0.15s ease;
     }
 
     .node-circle {
       fill: transparent;
-      stroke-width: 3.5px;
-      transition: all 0.25s ease;
+      stroke-width: 3px;
+      transition: all 0.2s ease;
     }
     .status-ring {
       fill: none;
@@ -187,8 +237,8 @@
     }
 
     .node-text {
-      font-size: 11px;
-      font-weight: 700;
+      font-size: 11.5px;
+      font-weight: 600;
       text-anchor: middle;
       dominant-baseline: central;
       fill: var(--node-text);
@@ -197,10 +247,10 @@
     }
     .node-credits {
       font-size: 10.5px;
-      font-weight: 800;
+      font-weight: 600;
       text-anchor: middle;
       dominant-baseline: central;
-      fill: #38bdf8;
+      fill: var(--accent);
       pointer-events: none;
     }
 
@@ -208,9 +258,13 @@
     .status-completed .node-mask { fill: var(--c-completed-bg); }
     .status-completed .node-text { fill: var(--c-completed-text) !important; }
 
-    .status-current .status-ring { stroke: #3b82f6; stroke-width: 5px; filter: drop-shadow(0 0 var(--glow-intensity) #3b82f6); }
+    .status-current .status-ring { stroke: #3b82f6; stroke-width: 5px; animation: pulse-current-ring 2.6s ease-in-out infinite; }
     .status-current .node-mask { fill: var(--c-current-bg); }
     .status-current .node-text { fill: var(--c-current-text); }
+    @keyframes pulse-current-ring {
+      0%, 100% { filter: drop-shadow(0 0 var(--glow-intensity) #3b82f6); }
+      50% { filter: drop-shadow(0 0 calc(var(--glow-intensity) * 2) #3b82f6); }
+    }
 
     .status-next .status-ring { stroke: #f59e0b; stroke-width: 5px; filter: drop-shadow(0 0 var(--glow-intensity) #f59e0b); }
     .status-next .node-mask { fill: var(--c-next-bg); }
@@ -231,28 +285,42 @@
     #actionModal {
       position: absolute;
       display: none;
+      opacity: 0;
+      transform: scale(0.95) translateY(4px);
+      transition: opacity 0.15s ease, transform 0.15s ease;
       z-index: 200;
       background: var(--modal-bg);
-      border-radius: 14px;
-      box-shadow: 0 16px 36px rgba(0,0,0,0.5);
+      border-radius: 16px;
+      box-shadow: 0 20px 46px rgba(0,0,0,0.5);
       border: 1px solid var(--border-color);
-      padding: 14px;
-      width: 250px;
+      padding: 16px;
+      padding-top: 18px;
+      width: 260px;
+      overflow: hidden;
     }
-    #actionModal h4 { margin: 0 0 10px 0; font-size: 0.95rem; color: #38bdf8; text-align: center; }
+    #actionModal.show { opacity: 1; transform: scale(1) translateY(0); }
+    #actionModal::before {
+      content: "";
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, #38bdf8, #06b6d4);
+    }
+    #actionModal h4 { margin: 0 0 12px 0; font-size: 0.92rem; color: var(--accent); text-align: center; font-weight: 700; }
     .btn-status {
       display: block;
       width: 100%;
       text-align: inherit;
-      padding: 8px 12px;
+      padding: 9px 13px;
       margin-bottom: 6px;
       border: 1px solid transparent;
-      border-radius: 8px;
+      border-radius: 9px;
       font-size: 0.83rem;
       cursor: pointer;
-      font-weight: 700;
-      transition: transform 0.1s;
+      font-weight: 600;
+      transition: transform 0.1s, filter 0.15s;
     }
+    .btn-status:hover { filter: brightness(1.15); }
     .btn-status:active { transform: scale(0.98); }
     .btn-completed { background: rgba(16, 185, 129, 0.2); color: #10b981; border-color: #10b981; }
     .btn-current { background: rgba(59, 130, 246, 0.2); color: #3b82f6; border-color: #3b82f6; }
@@ -264,22 +332,23 @@
 
     .legend-box {
       position: absolute;
-      bottom: 15px;
-      right: 15px;
+      bottom: 16px;
+      right: 16px;
       background: var(--panel-bg);
       backdrop-filter: blur(10px);
       border: 1px solid var(--border-color);
-      padding: 10px 15px;
-      border-radius: 12px;
-      box-shadow: 0 4px 15px rgba(0,0,0,0.25);
-      font-size: 0.75rem;
+      border-bottom: 1px solid var(--accent-soft);
+      padding: 10px 16px;
+      border-radius: 14px;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.25);
+      font-size: 0.74rem;
       display: flex;
       flex-direction: column;
-      gap: 6px;
+      gap: 7px;
       z-index: 100;
     }
-    body[dir="ltr"] .legend-box { right: auto; left: 15px; }
-    .legend-item { display: flex; align-items: center; gap: 8px; }
+    body[dir="ltr"] .legend-box { right: auto; left: 16px; }
+    .legend-item { display: flex; align-items: center; gap: 8px; color: var(--text-muted); font-weight: 500; }
 
     @media (max-width: 768px) {
       #dashboard { padding: 10px 14px; }
@@ -290,10 +359,11 @@
         position: fixed;
         top: 50% !important;
         left: 50% !important;
-        transform: translate(-50%, -50%);
+        transform: translate(-50%, -50%) scale(0.95);
         width: 85vw;
         max-width: 320px;
       }
+      #actionModal.show { transform: translate(-50%, -50%) scale(1); }
     }
   </style>
 </head>
@@ -308,7 +378,7 @@
       </div>
       <div style="font-size: 0.82rem; color: var(--text-muted);">
         <span id="lblProgress">الإنجاز:</span> 
-        <strong id="pctText" style="color: #38bdf8;">0%</strong> 
+        <strong id="pctText" style="color: var(--accent);">0%</strong> 
         (<strong id="completedHours">0</strong> / <span id="totalHours">160</span> <span id="lblHoursUnit">ساعة</span>)
         - <span id="completedCourses">0</span> / <span id="totalCourses">0</span> <span id="lblCoursesUnit">مادة</span>
       </div>
@@ -323,12 +393,12 @@
       <div class="stat-badge"><span class="badge-dot" style="background: #ec4899;"></span> <span id="lblStatusSummer">صيفي 2027:</span> <span id="count-summer">0 س</span></div>
       <div class="stat-badge"><span class="badge-dot" style="background: #a855f7;"></span> <span id="lblStatusNextYear">الأول 2027/2028:</span> <span id="count-next-year">0 س</span></div>
       <div class="stat-badge"><span class="badge-dot" style="background: #06b6d4;"></span> <span id="lblStatusTerm2028">الثاني 2028:</span> <span id="count-term-2028">0 س</span></div>
-      <div class="stat-badge" style="margin-right: auto; color: var(--text-muted);" id="lblControlsHint"></div>
+      <div style="margin-right: auto; color: var(--text-muted); font-size: 0.72rem; font-weight: 500; opacity: 0.85;" id="lblControlsHint"></div>
     </div>
   </div>
 
   <div class="legend-box">
-    <div style="font-weight: bold; margin-bottom: 2px; color: #38bdf8;" id="lblLegendTitle">نوع المتطلب:</div>
+    <div style="font-weight: 700; margin-bottom: 2px; color: var(--accent); font-size: 0.78rem;" id="lblLegendTitle">نوع المتطلب:</div>
     <div class="legend-item">
       <svg width="24" height="10"><line x1="0" y1="5" x2="24" y2="5" stroke="var(--link-color)" stroke-width="2.5"/></svg>
       <span id="lblPrereqPass">سابق نجاح</span>
@@ -743,6 +813,7 @@
       document.getElementById('modalCourseTitle').textContent = `${title} (${node.cr} ${translations[currentLang].crSuffix})`;
 
       modal.style.display = 'block';
+      modal.classList.remove('show');
 
       if (window.innerWidth > 768) {
         let left = clientX + 10;
@@ -752,17 +823,24 @@
         modal.style.left = left + 'px';
         modal.style.top = top + 'px';
       }
+
+      requestAnimationFrame(() => modal.classList.add('show'));
+    }
+
+    function hideModal() {
+      modal.classList.remove('show');
+      modal.style.display = 'none';
     }
 
     window.onclick = function(e) {
       if (!e.target.closest('#actionModal')) {
-        modal.style.display = 'none';
+        hideModal();
       }
     };
 
     window.addEventListener('touchstart', (e) => {
       if (!e.target.closest('#actionModal') && !e.target.closest('.node-group')) {
-        modal.style.display = 'none';
+        hideModal();
       }
     }, { passive: true });
 
@@ -781,7 +859,7 @@
       }
 
       updateStats();
-      modal.style.display = 'none';
+      hideModal();
     }
 
     function updateStats() {
