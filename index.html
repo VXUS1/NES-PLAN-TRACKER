@@ -159,12 +159,36 @@
     }
     .toggle-btn:hover { border-color: var(--accent); color: var(--accent); }
 
+    .collapse-btn {
+      display: none;
+      width: 30px;
+      height: 30px;
+      align-items: center;
+      justify-content: center;
+      background: var(--btn-bg);
+      color: var(--text-main);
+      border: 1px solid var(--border-color);
+      border-radius: 50%;
+      font-size: 0.75rem;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+
     .stats-row {
       display: flex;
       gap: 8px;
       flex-wrap: wrap;
       font-size: 0.76rem;
       align-items: center;
+      overflow: hidden;
+      max-height: 200px;
+      opacity: 1;
+      transition: max-height 0.25s ease, opacity 0.2s ease, margin 0.25s ease;
+    }
+    #dashboard.collapsed .stats-row {
+      max-height: 0;
+      opacity: 0;
+      pointer-events: none;
     }
     .stat-badge {
       display: flex;
@@ -350,11 +374,45 @@
     body[dir="ltr"] .legend-box { right: auto; left: 16px; }
     .legend-item { display: flex; align-items: center; gap: 8px; color: var(--text-muted); font-weight: 500; }
 
+    .zoom-controls {
+      position: absolute;
+      bottom: 16px;
+      left: 16px;
+      z-index: 100;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    body[dir="ltr"] .zoom-controls { left: auto; right: 16px; }
+    .zoom-btn {
+      width: 42px;
+      height: 42px;
+      border-radius: 12px;
+      background: var(--panel-bg);
+      backdrop-filter: blur(10px);
+      border: 1px solid var(--border-color);
+      color: var(--text-main);
+      font-size: 1.25rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      box-shadow: 0 6px 18px rgba(0,0,0,0.25);
+      line-height: 1;
+      padding: 0;
+    }
+    .zoom-btn:active { transform: scale(0.92); }
+    .zoom-btn.fit-btn { font-size: 0.95rem; color: var(--accent); }
+
     @media (max-width: 768px) {
-      #dashboard { padding: 10px 14px; }
-      .dash-header h2 { font-size: 1rem; }
-      .stats-row { font-size: 0.72rem; gap: 8px; }
+      #dashboard { padding: 10px 14px; border-radius: 14px; gap: 8px; }
+      .dash-header h2 { font-size: 0.92rem; }
+      .stats-row { font-size: 0.7rem; gap: 6px; }
+      .stat-badge { padding: 3px 8px; }
       .legend-box { display: none; }
+      .collapse-btn { display: flex; }
+      .zoom-btn { width: 40px; height: 40px; }
       #actionModal {
         position: fixed;
         top: 50% !important;
@@ -373,6 +431,7 @@
     <div class="dash-header">
       <h2 id="lblTitle">خطة هندسة وأمن شبكات الحاسوب (2022)</h2>
       <div class="header-controls">
+        <button class="collapse-btn" onclick="toggleCollapse()" id="collapseBtn" aria-label="Toggle details">▾</button>
         <button class="toggle-btn" onclick="toggleTheme()" id="themeBtn">☀️ White</button>
         <button class="toggle-btn" onclick="toggleLang()" id="langBtn">🌐 English</button>
       </div>
@@ -407,6 +466,12 @@
       <svg width="24" height="10"><line x1="0" y1="5" x2="24" y2="5" stroke="var(--link-color)" stroke-width="2.5" stroke-dasharray="4,4"/></svg>
       <span id="lblPrereqStudy">سابق دراسة / متزامن</span>
     </div>
+  </div>
+
+  <div class="zoom-controls">
+    <button class="zoom-btn" onclick="zoomStep(1)" aria-label="Zoom in">+</button>
+    <button class="zoom-btn fit-btn" onclick="fitToScreen(true)" aria-label="Fit to screen">⤢</button>
+    <button class="zoom-btn" onclick="zoomStep(-1)" aria-label="Zoom out">−</button>
   </div>
 
   <div id="viewport">
@@ -904,9 +969,95 @@
     let currentX = 15, currentY = 100, scale = 0.65;
     let initialPinchDist = null;
     let initialPinchScale = 1;
+    let pinchAnchorScreen = null;
+    let pinchAnchorScene = null;
+    const MIN_SCALE = 0.15, MAX_SCALE = 2.5;
+    let fitTimeout = null;
 
     function applyTransform() {
       scene.setAttribute("transform", `translate(${currentX}, ${currentY}) scale(${scale})`);
+    }
+
+    function animatedTransform() {
+      scene.style.transition = 'transform 0.32s cubic-bezier(0.22,1,0.36,1)';
+      applyTransform();
+      clearTimeout(fitTimeout);
+      fitTimeout = setTimeout(() => { scene.style.transition = ''; }, 340);
+    }
+
+    function zoomAround(screenX, screenY, newScale) {
+      newScale = Math.min(Math.max(MIN_SCALE, newScale), MAX_SCALE);
+      const sceneX = (screenX - currentX) / scale;
+      const sceneY = (screenY - currentY) / scale;
+      currentX = screenX - sceneX * newScale;
+      currentY = screenY - sceneY * newScale;
+      scale = newScale;
+    }
+
+    function zoomStep(dir) {
+      const vw = viewport.clientWidth, vh = viewport.clientHeight;
+      zoomAround(vw / 2, vh / 2, scale * (dir > 0 ? 1.28 : 0.78));
+      animatedTransform();
+    }
+
+    function getGraphBounds() {
+      let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+      nodes.forEach(n => {
+        minX = Math.min(minX, n.x - ringRadius - 6);
+        maxX = Math.max(maxX, n.x + ringRadius + 6);
+        minY = Math.min(minY, n.y - ringRadius - 20);
+        maxY = Math.max(maxY, n.y + ringRadius + 34);
+      });
+      return { minX, maxX, minY, maxY };
+    }
+
+    function centerOn(targetX, targetY, targetScale, animate) {
+      const vw = viewport.clientWidth, vh = viewport.clientHeight;
+      const headerH = document.getElementById('dashboard').getBoundingClientRect().height;
+      const availTop = headerH + 16;
+      const availH = Math.max(120, vh - availTop - 16);
+      scale = Math.min(Math.max(MIN_SCALE, targetScale), MAX_SCALE);
+      currentX = vw / 2 - targetX * scale;
+      currentY = availTop + availH / 2 - targetY * scale;
+      if (animate) animatedTransform(); else applyTransform();
+    }
+
+    function fitToScreen(animate) {
+      const b = getGraphBounds();
+      const graphW = b.maxX - b.minX;
+      const graphH = b.maxY - b.minY;
+      const vw = viewport.clientWidth, vh = viewport.clientHeight;
+      const headerH = document.getElementById('dashboard').getBoundingClientRect().height;
+      const pad = 20;
+      const availW = Math.max(100, vw - pad * 2);
+      const availH = Math.max(100, vh - headerH - pad * 2 - 12);
+      const fitScale = Math.min(availW / graphW, availH / graphH);
+      const midX = (b.minX + b.maxX) / 2;
+      const midY = (b.minY + b.maxY) / 2;
+      centerOn(midX, midY, fitScale, animate);
+    }
+
+    function mobileFocusScale() {
+      const vw = viewport.clientWidth;
+      return Math.min(1.05, Math.max(0.55, vw / 480));
+    }
+
+    function initialMobileView() {
+      const activeNodes = nodes.filter(n => userState[n.id] === 'current');
+      let tx, ty;
+      if (activeNodes.length) {
+        tx = activeNodes.reduce((s, n) => s + n.x, 0) / activeNodes.length;
+        ty = activeNodes.reduce((s, n) => s + n.y, 0) / activeNodes.length;
+      } else {
+        tx = 700; ty = 170;
+      }
+      centerOn(tx, ty, mobileFocusScale(), false);
+    }
+
+    function toggleCollapse() {
+      const dash = document.getElementById('dashboard');
+      dash.classList.toggle('collapsed');
+      document.getElementById('collapseBtn').textContent = dash.classList.contains('collapsed') ? '▾' : '▴';
     }
 
     const viewport = document.getElementById('viewport');
@@ -929,8 +1080,9 @@
 
     viewport.addEventListener('wheel', (e) => {
       e.preventDefault();
+      const rect = viewport.getBoundingClientRect();
       const zoomFactor = e.deltaY < 0 ? 1.08 : 0.92;
-      scale = Math.min(Math.max(0.25, scale * zoomFactor), 2.5);
+      zoomAround(e.clientX - rect.left, e.clientY - rect.top, scale * zoomFactor);
       applyTransform();
     }, { passive: false });
 
@@ -941,11 +1093,14 @@
         startY = e.touches[0].clientY - currentY;
       } else if (e.touches.length === 2) {
         isPanning = false;
-        initialPinchDist = Math.hypot(
-          e.touches[0].clientX - e.touches[1].clientX,
-          e.touches[0].clientY - e.touches[1].clientY
-        );
+        const rect = viewport.getBoundingClientRect();
+        const t0 = e.touches[0], t1 = e.touches[1];
+        initialPinchDist = Math.hypot(t0.clientX - t1.clientX, t0.clientY - t1.clientY);
         initialPinchScale = scale;
+        const midX = (t0.clientX + t1.clientX) / 2 - rect.left;
+        const midY = (t0.clientY + t1.clientY) / 2 - rect.top;
+        pinchAnchorScreen = { x: midX, y: midY };
+        pinchAnchorScene = { x: (midX - currentX) / scale, y: (midY - currentY) / scale };
       }
     }, { passive: false });
 
@@ -961,7 +1116,10 @@
           e.touches[0].clientY - e.touches[1].clientY
         );
         const factor = dist / initialPinchDist;
-        scale = Math.min(Math.max(0.25, initialPinchScale * factor), 2.5);
+        const newScale = Math.min(Math.max(MIN_SCALE, initialPinchScale * factor), MAX_SCALE);
+        currentX = pinchAnchorScreen.x - pinchAnchorScene.x * newScale;
+        currentY = pinchAnchorScreen.y - pinchAnchorScene.y * newScale;
+        scale = newScale;
         applyTransform();
       }
     }, { passive: false });
@@ -975,16 +1133,19 @@
       applyLangUI();
     });
 
-    if (window.innerWidth <= 768) {
-      scale = 0.45;
-      currentX = 10;
-      currentY = 90;
-    }
-
     document.body.className = `${currentTheme}-mode`;
+    if (isMobileDevice()) {
+      document.getElementById('dashboard').classList.add('collapsed');
+      document.getElementById('collapseBtn').textContent = '▾';
+    }
     applyLangUI();
     renderDiagram();
-    applyTransform();
+    if (isMobileDevice()) {
+      initialMobileView();
+    } else {
+      currentX = 15; currentY = 100; scale = 0.65;
+      applyTransform();
+    }
   </script>
 </body>
 </html>
